@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model CLIENTES {
+  CLI_CLAVE        String  @id @unique(map: "CLI_CLAVE_UNIQUE") @db.VarChar(10)
+  CLI_ESTATUS      String? @db.VarChar(15)
+  CLI_NOMBRE       String? @db.VarChar(100)
+  CLI_REG_FISCAL   String? @db.VarChar(3)
+  CLI_EST_TIMBRADO String? @db.VarChar(5)
+}
+
+model cotizacion_detalle {
+  folio_cotizacion        Int      @unique(map: "folio_cotizacion_UNIQUE")
+  id_parte                Int      @unique(map: "id_parte_UNIQUE") @default(autoincrement())
+  codigo_parte            String?  @db.VarChar(30)
+  cav                     Int?
+  machine_type            String?  @db.VarChar(10)
+  costo_hora_maquina      Decimal? @db.Decimal(11, 4)
+  ciclos                  Int?
+  pcs_hora                Decimal? @db.Decimal(11, 4)
+  porc_ineficiencia       Decimal? @db.Decimal(6, 4)
+  production              Decimal? @db.Decimal(11, 4)
+  margin4                 Decimal? @db.Decimal(11, 4)
+  packing_cost            Decimal? @db.Decimal(11, 4)
+  pcs_packing             Int?
+  packing                 Decimal? @db.Decimal(11, 4)
+  pcs_entrega             Int?
+  flete_cost              Decimal? @db.Decimal(11, 4)
+  logistic_cost           Decimal? @db.Decimal(11, 4)
+  packing_outside_service Decimal? @db.Decimal(11, 4)
+  hr_mantto               Int?
+  cost_hr_mtto            Decimal? @db.Decimal(11, 4)
+  pcs_mtto                Int?
+  tooling_maintance       Decimal? @db.Decimal(11, 4)
+  ovh_ind_porc            Decimal? @db.Decimal(6, 4)
+  overhead                Decimal? @db.Decimal(11, 4)
+  overhead_margin         Decimal? @db.Decimal(11, 4)
+  profit_porc             Decimal? @db.Decimal(6, 4)
+  profit                  Decimal? @db.Decimal(11, 4)
+  margin_profit           Decimal? @db.Decimal(11, 4)
+  unit_price              Decimal? @db.Decimal(11, 4)
+  margin_total            Decimal? @db.Decimal(11, 4)
+  total_materias_primas   Decimal? @db.Decimal(11, 4)
+  materias_primas_porc    Decimal? @db.Decimal(6, 4)
+  total_produccion        Decimal? @db.Decimal(11, 4)
+  produccion_porc         Decimal? @db.Decimal(6, 4)
+  total_empaque_logistica Decimal? @db.Decimal(11, 4)
+  empaque_logistica_porc  Decimal? @db.Decimal(6, 4)
+  total_mantenimiento     Decimal? @db.Decimal(11, 4)
+  mantenimiento_porc      Decimal? @db.Decimal(6, 4)
+  kg_material             Decimal? @db.Decimal(11, 4)
+  moq                     Int?
+  eau                     Int?
+  total                   Decimal? @db.Decimal(11, 4)
+  ingresos                Decimal? @db.Decimal(11, 4)
+  costo_ventas            Decimal? @db.Decimal(11, 4)
+  costo_materia_prima     Decimal? @db.Decimal(11, 4)
+  costo_mano_obra         Decimal? @db.Decimal(11, 4)
+  gastos_fabricacion      Decimal? @db.Decimal(11, 4)
+  utilidad_bruta          Decimal? @db.Decimal(11, 4)
+  egresos                 Decimal? @db.Decimal(11, 4)
+  gastos_fijos            Decimal? @db.Decimal(11, 4)
+  utilidad_antes_ebitda   Decimal? @db.Decimal(11, 4)
+  isr                     Decimal? @db.Decimal(11, 4)
+  ptu                     Decimal? @db.Decimal(11, 4)
+  utilidad_neta           Decimal? @db.Decimal(11, 4)
+  margen_neto             Decimal? @db.Decimal(6, 4)
+
+  @@id([folio_cotizacion, id_parte])
+}
+
+model cotizacion_materiales {
+  folio_cotizacion      Int
+  id_parte              Int
+  id_material           Int      @default(autoincrement())
+  codigo_material       String?  @db.VarChar(30)
+  supplier_resin        Decimal? @db.Decimal(11, 4)
+  part_g                Decimal? @db.Decimal(11, 4)
+  runner_porc           Decimal? @db.Decimal(6, 4)
+  runner_g              Decimal? @db.Decimal(11, 4)
+  loss_porc             Decimal? @db.Decimal(6, 4)
+  weigth                Decimal? @db.Decimal(11, 4)
+  resin_basis           Decimal? @db.Decimal(11, 4)
+  ovh_cost_porc         Decimal? @db.Decimal(6, 4)
+  resin_cot             Decimal? @db.Decimal(11, 4)
+  total_mat             Decimal? @db.Decimal(11, 4)
+  gk_porc               Decimal? @db.Decimal(6, 4)
+  gk                    Decimal? @db.Decimal(11, 4)
+  scrap_porc            Decimal? @db.Decimal(6, 4)
+  margin_scrap          Decimal? @db.Decimal(11, 4)
+  margin2               Decimal? @db.Decimal(11, 4)
+  porc_margin_seguridad Decimal? @db.Decimal(6, 4)
+  margin_seguridad      Decimal? @db.Decimal(11, 4)
+  total_mat_prima       Decimal? @db.Decimal(11, 4)
+
+  @@id([id_material, folio_cotizacion, id_parte])
+}
+
+model cotizaciones {
+  folio_cotizacion         Int       @id @unique(map: "folio_cotizacion_UNIQUE") @default(autoincrement())
+  fecha_generacion         DateTime? @db.Date
+  clase_cliente            String?   @db.VarChar(1)
+  codigo_cliente_prospecto String?   @db.VarChar(10)
+  tipo_cliente             String?   @db.VarChar(40)
+  tipo_proceso             String?   @db.VarChar(40)
+  tipo_precio              String?   @db.VarChar(40)
+  total                    Decimal?  @db.Decimal(15, 2)
+  estatus                  String?   @db.VarChar(1)
+  codigo_vendedor          Int?
+}
+
+model maquina {
+  tipo_proceso String   @unique(map: "tipo_proceso_UNIQUE") @db.VarChar(40)
+  machine_type String   @unique(map: "machine_type_UNIQUE") @db.VarChar(10)
+  costo_hora   Decimal? @db.Decimal(11, 2)
+
+  @@id([machine_type, tipo_proceso])
+}
+
+model material {
+  codigo_material String    @id @unique(map: "codigo_material_UNIQUE") @db.VarChar(30)
+  nombre_material String?   @db.VarChar(200)
+  resin_basis     Decimal?  @db.Decimal(11, 4)
+  fecha_ult_cotiz DateTime? @db.Date
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model param_industria {
+  tipo_cliente       String   @unique(map: "tipo_cliente_UNIQUE") @db.VarChar(40)
+  tipo_precio        String   @unique(map: "tipo_precio_UNIQUE") @db.VarChar(20)
+  overhead_cost_porc Decimal? @db.Decimal(6, 4)
+  loss_porc          Decimal? @db.Decimal(6, 4)
+  gk_porc            Decimal? @db.Decimal(6, 4)
+  scrap_porc         Decimal? @db.Decimal(6, 4)
+  ineficiencia_porc  Decimal? @db.Decimal(6, 4)
+  mtto_cost_hr       Decimal? @db.Decimal(11, 4)
+  overhead_porc      Decimal? @db.Decimal(6, 4)
+  profit_porc        Decimal? @db.Decimal(6, 4)
+
+  @@id([tipo_cliente, tipo_precio])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model parte {
+  codigo_parte String  @id @unique(map: "codigo_parte_UNIQUE") @db.VarChar(30)
+  nombre_parte String? @db.VarChar(200)
+}
+
+model prospecto {
+  codigo_prospecto String  @id @unique(map: "codigo_prospecto_UNIQUE") @db.VarChar(10)
+  nombre_prospecto String? @db.VarChar(100)
+}
+
+model vendedor {
+  codigo_vendedor Int     @id @unique(map: "codigo_vendedor_UNIQUE") @default(autoincrement())
+  nombre_vendedor String? @db.VarChar(100)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ALMACENES {
+  ALM_CODIGO      Int     @id @unique(map: "UNI_CODIGO_UNIQUE")
+  ALM_DESCRIPCION String? @db.VarChar(45)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model CON_INVENTARIO {
+  CON_TIP_CONCEPTO Int     @id @unique(map: "CON_TIP_CONCEPTO_UNIQUE")
+  CON_DES_CONCEPTO String? @db.VarChar(45)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model CTAS_PAGAR {
+  CXP_PROVEEDOR       String?  @db.VarChar(10)
+  CXP_FEC_ELABORAC    String?  @db.VarChar(10)
+  CXP_FEC_APLICA      String?  @db.VarChar(10)
+  CXP_FEC_VENCIM      String?  @db.VarChar(10)
+  CXP_FOLIO           String?  @db.VarChar(30)
+  CXP_TIP_CONCEPTO    String?  @db.VarChar(1)
+  CXP_TIP_MOVTO       String?  @db.VarChar(5)
+  CXP_DESCRIPCION     String?  @db.VarChar(30)
+  CXP_DOCUMENTO       String?  @db.VarChar(30)
+  CXP_IMPORTE         Decimal? @db.Decimal(16, 5)
+  CXP_MONEDA          Int?
+  CXP_TIPO_CAMBIO     Decimal? @db.Decimal(13, 6)
+  CXP_IMPORTE_MON_EXT Decimal? @db.Decimal(13, 5)
+  CXP_DESCUENTO       Decimal? @db.Decimal(13, 5)
+  CXP_NUM_CONCEPTO    Int?
+
+  @@ignore
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model MOV_INVENTARIO {
+  MOV_FOLIO              Int?
+  MOV_DOCUMENTO          String?  @db.VarChar(30)
+  MOV_CLAVE_ART          String?  @db.VarChar(30)
+  MOV_DESCRIPCION        String?  @db.VarChar(100)
+  MOV_COD_LINEA          String?  @db.VarChar(10)
+  MOV_CLAVE_CLIENTE_PROV String?  @db.VarChar(10)
+  MOV_CONCEPTO           Int?
+  MOV_FECHA              String?  @db.VarChar(10)
+  MOV_CANTIDAD_COSTEAR   Decimal? @db.Decimal(9, 2)
+  MOV_PRECIO             Decimal? @db.Decimal(13, 5)
+  MOV_COSTO              Decimal? @db.Decimal(13, 5)
+  MOV_ALMACEN            Int?
+  MOV_EXISTENCIAS        Decimal? @db.Decimal(9, 2)
+  MOV_FACT_CONVER        Decimal? @db.Decimal(9, 2)
+  MOV_NUM_MOVIMIENTO     Int      @id @unique(map: "MOV_NUM_MOVIMIENTO_UNIQUE")
+  MOV_TIPO_DOCUMENTO     String?  @db.VarChar(30)
+  MOV_COSTO_OPERADO      Decimal? @db.Decimal(13, 5)
+  MOV_CANTIDAD           Decimal? @db.Decimal(9, 2)
+
+  @@index([MOV_CLAVE_CLIENTE_PROV], map: "CLIENTES_idx")
+  @@index([MOV_CONCEPTO], map: "CONCEPTOS_idx")
+  @@index([MOV_ALMACEN], map: "MOV_UNIDADES_idx")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model PROVEEDORES {
+  PRO_CLAVE         String  @id @unique(map: "PRO_CLAVE_UNIQUE") @db.VarChar(10)
+  PRO_RFC           String? @db.VarChar(15)
+  PRO_NOMBRE        String? @db.VarChar(100)
+  PRO_CLASIFICACION String? @db.VarChar(10)
+  PRO_CREDITO       String? @db.VarChar(15)
+  PRO_DIAS_CREDITO  Int?
+  PRO_ESTATUS       String? @db.VarChar(15)
+}
+
+model REMISIONES {
+  REM_CLAVE           String   @db.VarChar(10)
+  REM_CLIENTE         String   @db.VarChar(10)
+  REM_ESTATUS         String   @db.VarChar(10)
+  REM_PEDIDO          String?  @db.VarChar(30)
+  REM_FEC_ELABORAC    String?  @db.VarChar(10)
+  REM_SUBTOTAL        Decimal? @db.Decimal(13, 5)
+  REM_NUM_ALMACEN     Int?
+  REM_FORMA_ENVIO     String?  @db.VarChar(20)
+  REM_IMPORTE_TOTAL   Decimal? @db.Decimal(13, 5)
+  REM_NOMBRE_VENDEDOR String?  @db.VarChar(50)
+
+  @@id([REM_CLAVE, REM_CLIENTE, REM_ESTATUS])
+}
+
+model conprod {
+  CON_ORDEN_COMPRA      String    @id @db.VarChar(20)
+  CON_NUM_PARTE         String    @db.VarChar(35)
+  CON_DESCRIPCION       String    @db.VarChar(50)
+  CON_MATERIAL          String    @db.VarChar(25)
+  CON_PESO              Float
+  CON_KG_REQUERIDOS     Float
+  CON_CANTIDAD_PZAS     Int
+  CON_FECHA_HORA_REG    DateTime  @db.DateTime(0)
+  CON_AREA              String?   @db.VarChar(50)
+  CON_OBSERVACIONES_MOD String?   @db.VarChar(50)
+  CON_FEC_ULTMOD        DateTime? @db.Date
+  CON_HORA_ULTMOD       DateTime? @db.Time(0)
+  CON_USU_ULTMOD        String    @db.VarChar(15)
+}
+
+model param_grales {
+  tipo        String   @id @db.VarChar(6)
+  descripcion String?  @db.VarChar(100)
+  valor       Decimal? @db.Decimal(11, 2)
+}
