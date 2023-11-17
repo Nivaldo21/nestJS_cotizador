@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
+import { ErrorHttpStatusCode } from "@nestjs/common/utils/http-error-by-code.util";
 import { CLIENTES, cotizaciones, maquina, material, param_industria, parte, prospecto, vendedor } from "@prisma/client";
-import { Request_SearchCotizacion, Request_SearchMaquina, Request_SearchParamIndustria, WhereConditions, clientesProspectos } from "src/interfaces";
+import { Request_SearchCotizacion, Request_SearchMaquina, Request_SearchParamIndustria, Request_saveCotizacion, WhereConditions, clientesProspectos } from "src/interfaces";
 import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
@@ -73,8 +74,45 @@ export class ApiService{
         );
 
         const filteredCotizaciones = _cotizaciones.filter((result) => result && (result.cliente || result.vendedor)); //FILTRADO POR SI NO ENCEUNTRA LOS DATOS DEL CLIENTE 
-        console.log("Respuesta servicio getCotizaciones: ", filteredCotizaciones);
         return filteredCotizaciones;
+    }
+
+    async saveCotizacion(data:Request_saveCotizacion): Promise<any>{
+        //console.log(data)
+        try { 
+            const today = new Date().toISOString();
+
+            //TODO VALIDAR SI EL CLIENTE EXISTE, SI NO EXISTE PONERLO EN PROSPECTO Y POSTERIORIMENTE PONER LA VANDERA SI ES CLIENTE O PROPSECTO
+
+            //COTIZACION
+            const resp_cotizacion = await this.prisma.cotizaciones.create({
+                data: {
+                    fecha_generacion: today,
+                    clase_cliente: 'C', //C - Cliente, P - Próspecto
+                    codigo_cliente_prospecto: data.cliente_prospecto.CLI_CLAVE,
+                    tipo_cliente: data.tipo_cliente,
+                    tipo_proceso: data.tipo_proceso,
+                    tipo_precio: data.precios,
+                    total: data.total,
+                    estatus: 'G',
+                    codigo_vendedor: data.vendedor.codigo_vendedor,
+                }
+            });
+            console.log(resp_cotizacion);
+            return {status: 200, data:resp_cotizacion};
+        }catch(error:any){
+            console.log(error);
+            return {status: 500, data:null}
+        }
+
+        //COTIZACION DETALLE
+            //TODO CHECAR SI LA PARTE ES TA SI NO CREARLA Y REGISTRARLA
+
+        //COTIZACION MATERIAL
+            //TODO CHECAR SI LA MATERIA PRIMA YA ESTA REGOSTRADA SI NO REGISTRARLO
+
+
+        
     }
 
     /* async getCotizacionById(folio_cotizacion: number): Promise<cotizaciones>{
@@ -135,14 +173,11 @@ export class ApiService{
              }
         });
 
-        console.log("resultado getMateriales",result);
         return result;
     }
 
     /* TABLA PARAM_INDUSTRIA */
     async getParamIndustria(data:Request_SearchParamIndustria):Promise<param_industria>{
-        console.log("params",data);
-        //console.log("todos",result1);
         const result = await this.prisma.param_industria.findFirst({
             where: {
                 tipo_cliente:  data.tipo_cliente,

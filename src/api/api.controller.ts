@@ -41,6 +41,12 @@ export class ApiController{
         return this.apiService.getMaquinas(data);
     }
 
+
+    @Post('guardarCotizacion')
+    async guardarCotizacion(@Body() data:any){
+        return this.apiService.saveCotizacion(data);
+    }
+
     @Get('')
     async getHello(){
         return "<h1>Ruta principal de API CAMCA</h1>"
