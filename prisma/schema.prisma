@@ -17,7 +17,7 @@ model CLIENTES {
 }
 
 model cotizacion_detalle {
-  folio_cotizacion        Int      @unique(map: "folio_cotizacion_UNIQUE")
+  folio_cotizacion        Int
   id_parte                Int      @unique(map: "id_parte_UNIQUE") @default(autoincrement())
   codigo_parte            String?  @db.VarChar(30)
   cav                     Int?
@@ -117,8 +117,8 @@ model cotizaciones {
 }
 
 model maquina {
-  tipo_proceso String   @unique(map: "tipo_proceso_UNIQUE") @db.VarChar(40)
-  machine_type String   @unique(map: "machine_type_UNIQUE") @db.VarChar(10)
+  tipo_proceso String   @db.VarChar(40)
+  machine_type String   @db.VarChar(10)
   costo_hora   Decimal? @db.Decimal(11, 2)
 
   @@id([machine_type, tipo_proceso])
@@ -154,7 +154,7 @@ model parte {
 }
 
 model prospecto {
-  codigo_prospecto String  @id @unique(map: "codigo_prospecto_UNIQUE") @db.VarChar(10)
+  codigo_prospecto Int     @id @unique(map: "codigo_prospecto_UNIQUE") @default(autoincrement()) @db.UnsignedInt
   nombre_prospecto String? @db.VarChar(100)
 }
 

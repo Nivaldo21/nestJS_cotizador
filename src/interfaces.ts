@@ -1,4 +1,4 @@
-import { CLIENTES,prospecto } from "@prisma/client";
+import { CLIENTES,cotizacion_detalle,cotizacion_materiales,cotizaciones,prospecto } from "@prisma/client";
 
 export interface Request_SearchCotizacion{
     folio_cotizacion?: string;
@@ -33,6 +33,8 @@ export interface Requets_Cliente_Prospecto{
     CLI_NOMBRE: string;
     CLI_REG_FISCAL: any;
     CLI_EST_TIMBRADO: any;
+    codigo_prospecto?: any;
+    nombre_prospecto?: any;
 }
 
 export interface Requets_Vendedor{
@@ -81,6 +83,10 @@ export interface Item_Cotizacion{
     flag_nueva_parte: boolean,
     cav: string,
     total_materia_prima: number,
+    total_materia_prima_gk: number,
+    total_materia_prima_margen_seguridad: number,
+    total_materia_prima_margin_2: number,
+    total_materia_prima_parte_g: number,
     tipo_maquina: string,
     costo_hora_maquina: number,
     cyclus: string,
@@ -110,5 +116,17 @@ export interface Item_Cotizacion{
     kg_material: string,
     moq: string,
     eau: string,
-    total: string
+    total: string,
+    tabla_total_produccion?: number,
+    tabla_produccion_porc?:  number,
+    tabla_total_empaque_logistica?:  number,
+    tabla_empaque_logistica_porc?:  number,
+    tabla_total_mantenimiento?:  number,
+    tabla_mantenimiento_porc?:  number,
+}
+
+export interface Detalle_cotizacion_response {
+    
+    cotizacion_detalle_item?: cotizacion_detalle;
+    cotizacion_mteriales_items?: cotizacion_materiales[];
 }

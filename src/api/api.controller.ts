@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Res } from "@nestjs/common";
 import { ApiService } from "./api.service";
-import { cotizaciones } from "@prisma/client";
+import { Response } from 'express';
 import { Request_SearchCotizacion, Request_SearchMaquina, Request_SearchParamIndustria } from "src/interfaces";
 
 @Controller()
@@ -46,6 +46,12 @@ export class ApiController{
     async guardarCotizacion(@Body() data:any){
         return this.apiService.saveCotizacion(data);
     }
+
+    @Get('getCotizacionByCode/:code')
+    async getCotizacionByCode(@Param() params:any) {
+        return this.apiService.getCotizacionByCode(params.code);
+    }
+    
 
     @Get('')
     async getHello(){
