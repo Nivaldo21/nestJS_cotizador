@@ -1,6 +1,5 @@
-import { Body, HttpStatus, Injectable, Res } from "@nestjs/common";
-import { ErrorHttpStatusCode } from "@nestjs/common/utils/http-error-by-code.util";
-import { CLIENTES, cotizacion_detalle, cotizacion_materiales, cotizaciones, maquina, material, param_industria, parte, prospecto, vendedor } from "@prisma/client";
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { Prisma, cotizacion_detalle, cotizacion_materiales, cotizaciones, maquina, material, param_industria, parte, prospecto, vendedor } from "@prisma/client";
 import { Detalle_cotizacion_response, Request_SearchCotizacion, Request_SearchMaquina, Request_SearchParamIndustria, Request_saveCotizacion, WhereConditions, clientesProspectos } from "src/interfaces";
 import { PrismaService } from "src/prisma/prisma.service";
 
@@ -78,20 +77,19 @@ export class ApiService{
     }
 
     async saveCotizacion(data:Request_saveCotizacion): Promise<any>{
-        try {             
-            console.log('+++++++++++++++++++++++++');
+        const transaction = await this.prisma.$transaction(async (prisma) => {
             //VALIDAR SI EL "CLIENTE" EXISTE, SI NO EXISTE PONERLO EN PROSPECTO Y POSTERIORIMENTE PONER LA VANDERA SI ES CLIENTE O PROPSECTO
             let flagEsPropspecto:boolean = false;
             let resp_cliente:any = null;
             if (data.cliente_prospecto.codigo_prospecto) {
                 flagEsPropspecto = true;
-                resp_cliente = await this.prisma.prospecto.findFirst({ where: {codigo_prospecto:  data.cliente_prospecto.codigo_prospecto} });
+                resp_cliente = await prisma.prospecto.findFirst({ where: {codigo_prospecto:  data.cliente_prospecto.codigo_prospecto} });
             }else{
                 if (data.cliente_prospecto.CLI_CLAVE) {
-                    resp_cliente = await this.prisma.cLIENTES.findFirst({ where: {CLI_CLAVE:  data.cliente_prospecto.CLI_CLAVE} });
+                    resp_cliente = await prisma.cLIENTES.findFirst({ where: {CLI_CLAVE:  data.cliente_prospecto.CLI_CLAVE} });
                 }else{
                     flagEsPropspecto = true;
-                    resp_cliente = await this.prisma.prospecto.create({ data:{nombre_prospecto: data.cliente_prospecto.CLI_NOMBRE} });
+                    resp_cliente = await prisma.prospecto.create({ data:{nombre_prospecto: data.cliente_prospecto.CLI_NOMBRE} });
                 }
             }        
             //VALIDAR SI EL "VENDEDOR" EXISTE, SI NO EXISTE PONERLO en tabla de vendedor
@@ -99,7 +97,7 @@ export class ApiService{
             let nuevoVendedor:vendedor = null;
             if (!data.vendedor.codigo_vendedor) {
                 flagNuevoVendedor = true;
-                nuevoVendedor = await this.prisma.vendedor.create({data: { nombre_vendedor: data.vendedor.nombre_vendedor } })
+                nuevoVendedor = await prisma.vendedor.create({data: { nombre_vendedor: data.vendedor.nombre_vendedor } })
             }
 
             //CREAR LA COTIZACION
@@ -115,27 +113,27 @@ export class ApiService{
                 estatus: 'G',
                 codigo_vendedor: flagNuevoVendedor ?  nuevoVendedor.codigo_vendedor : data.vendedor.codigo_vendedor,
             }
-            const cotizacion_created:cotizaciones = await this.prisma.cotizaciones.create({ data: cotizacion_insert });
+            const cotizacion_created:cotizaciones = await prisma.cotizaciones.create({ data: cotizacion_insert });
 
             //COTIZACION DETALLE
-            data.cotizacion_array.forEach(async element => {
-                let parte_serached = await this.prisma.parte.findFirst({where: {codigo_parte: element.codigo_parte}});
+            for (const element of data.cotizacion_array) {        
+                let parte_serached = await prisma.parte.findFirst({where: {codigo_parte: element.codigo_parte}});
                 let parte_insert_detalle:parte;
                 if (!parte_serached) { //REVISAR SI LA PARTE QUE SE REGISTRO EXISTE, SI NO REGISTRARLA
-                    parte_insert_detalle = await this.prisma.parte.create({data: {codigo_parte: element.codigo_parte, nombre_parte: element.descripcion_parte}});
+                    parte_insert_detalle = await prisma.parte.create({data: {codigo_parte: element.codigo_parte, nombre_parte: element.descripcion_parte}});
                 }else{ parte_insert_detalle = parte_serached; }
 
                  // ESTADO DE RESULTADOS -  CALCULADOS ++++++++
-                 // TODO REDONDEAR A decimal (11,4)
-                 // TODO margen_neto es redondeado a decimal (6,4)
-
                 const ingresos_result = (Number(element.unit_price)+Number(element.margin_total))*Number(element.eau);
                 const costo_materia_prima_result = (element.total_materia_prima+element.total_materia_prima_gk + element.total_materia_prima_margin_2 + element.total_materia_prima_margen_seguridad)*Number(element.eau);
                 const costo_mano_obra_resut = (Number(element.production)+Number(element.margin_4))*Number(element.eau);
                 const gastos_fabricacion_result = (Number(element.packing_and_outside_service)*Number(element.eau))+(Number(element.tooling_mantiance)*Number(element.eau));
                 const utilidad_antes_ebitda_result = (ingresos_result - (costo_materia_prima_result + costo_mano_obra_resut + gastos_fabricacion_result)) - ((Number(element.overhead )+ Number(element.margin_overhead))*Number(element.eau))
+                
+                const utilidad_neta_toFixed = utilidad_antes_ebitda_result - ( utilidad_antes_ebitda_result * 0.3) - (utilidad_antes_ebitda_result * 0.1);
+                const margen_neto_tofixed = (utilidad_antes_ebitda_result -  ( utilidad_antes_ebitda_result * 0.3) - (utilidad_antes_ebitda_result * 0.1)) / ingresos_result;
                 let obj_estadoResultados:any = {
-                    ingresos: ingresos_result,
+                    ingresos: ingresos_result.toFixed(4),
                     costo_materia_prima: costo_materia_prima_result,
                     costo_mano_obra: costo_mano_obra_resut,
                     gastos_fabricacion: gastos_fabricacion_result,
@@ -146,11 +144,17 @@ export class ApiService{
                     utilidad_antes_ebitda: utilidad_antes_ebitda_result,
                     isr: utilidad_antes_ebitda_result * 0.3,
                     ptu: utilidad_antes_ebitda_result * 0.1,
-                    utilidad_neta: utilidad_antes_ebitda_result - ( utilidad_antes_ebitda_result * 0.3) - (utilidad_antes_ebitda_result * 0.1),
-                    margen_neto: (utilidad_antes_ebitda_result -  ( utilidad_antes_ebitda_result * 0.3) - (utilidad_antes_ebitda_result * 0.1)) / ingresos_result,
+                    utilidad_neta: utilidad_neta_toFixed.toFixed(4),
+                    margen_neto: margen_neto_tofixed.toFixed(4)
                 }
 
-                let cotizacion_detalle_created:cotizacion_detalle = await this.prisma.cotizacion_detalle.create({
+                const regex_11_4 = /^\d{1,7}(\.\d{1,4})?$/;
+                const regex_6_4 = /^\d{1,2}(\.\d{1,4})?$/;
+                if (!regex_11_4.test(obj_estadoResultados.ingresos) || !regex_6_4.test(obj_estadoResultados.margen_neto) || !regex_11_4.test(obj_estadoResultados.utilidad_neta)) {
+                    throw new HttpException('Un valor que se calcula para el estado de resultados no cumple con el formato de decimal(11,4) o decimal(6,4)', HttpStatus.BAD_REQUEST);
+                }
+                
+                let cotizacion_detalle_created:cotizacion_detalle = await prisma.cotizacion_detalle.create({
                     data: {
                         folio_cotizacion: cotizacion_created.folio_cotizacion,
                         codigo_parte: parte_insert_detalle.codigo_parte,
@@ -201,7 +205,7 @@ export class ApiService{
                         total: Number(element.total),
 
                         //PARA EL ESTADO DE RESULTADOS - SON CALCULADOS AQUI EN EL BACK ++++++++
-                        ingresos: obj_estadoResultados.ingresos,
+                        ingresos: parseFloat(obj_estadoResultados.ingresos),
                         costo_ventas: obj_estadoResultados.costo_ventas,
                         costo_materia_prima: obj_estadoResultados.costo_materia_prima,
                         costo_mano_obra: obj_estadoResultados.costo_mano_obra,
@@ -212,18 +216,20 @@ export class ApiService{
                         utilidad_antes_ebitda: obj_estadoResultados.utilidad_antes_ebitda,
                         isr: obj_estadoResultados.isr,
                         ptu: obj_estadoResultados.ptu,
-                        utilidad_neta: obj_estadoResultados.utilidad_neta,
-                        margen_neto: obj_estadoResultados.margen_neto,
+                        utilidad_neta: parseFloat(obj_estadoResultados.utilidad_neta),
+                        margen_neto: parseFloat(obj_estadoResultados.margen_neto),
 
                     }
                 })
 
                 //DETALLE COTIZACION MATERIALES == COTIZACION MATERIAL
-                element.materias_primas.forEach(async materiaPrima =>{
-                    const materiaPrima_searched =await this.prisma.material.findFirst({where: {codigo_material: materiaPrima.codigo_materia_prima}});
+                const materiasPrimas = element.materias_primas;
+                for (let i = 0; i < materiasPrimas.length; i++) {
+                    const materiaPrima = materiasPrimas[i];
+                    const materiaPrima_searched =await prisma.material.findFirst({where: {codigo_material: materiaPrima.codigo_materia_prima}});
                     let material_insert_detalle:material;
                     if (!materiaPrima_searched) {
-                        material_insert_detalle = await this.prisma.material.create({
+                        material_insert_detalle = await prisma.material.create({
                             data:{
                                 codigo_material: materiaPrima.codigo_materia_prima, 
                                 nombre_material: materiaPrima.descripcion_materia_prima,
@@ -233,7 +239,7 @@ export class ApiService{
                         });
                     }else{material_insert_detalle = materiaPrima_searched; }
 
-                    let cotizacion_materia_inserted:cotizacion_materiales = await this.prisma.cotizacion_materiales.create({
+                    let cotizacion_materia_inserted:cotizacion_materiales = await prisma.cotizacion_materiales.create({
                         data: {
                             folio_cotizacion: cotizacion_created.folio_cotizacion,
                             id_parte: cotizacion_detalle_created.id_parte,
@@ -258,14 +264,10 @@ export class ApiService{
                             total_mat_prima: Number(element.total_materia_prima),
                         }
                     });
-                })
-            });
-
-            return {status: 200, data:cotizacion_created};
-        }catch(error:any){
-            console.log(error);
-            return {status: 500, data:null}
-        }
+                }
+            }
+        });
+        return { status: 200 };
     }
 
     async getCotizacionByCode(code_cotizacion:any):Promise<any>{
@@ -296,19 +298,7 @@ export class ApiService{
         return obj_respone;
     }
 
-    /* async getCotizacionById(folio_cotizacion: number): Promise<cotizaciones>{
-        return this.prisma.cotizaciones.findUnique({
-            where: {folio_cotizacion}
-        });
-    }
-
-    async createCotizacion(data: cotizaciones): Promise<cotizaciones>{
-        return this.prisma.cotizaciones.create({
-            data
-        })
-    }
-
-    async updateCotizacion(folio_cotizacion: number, data: cotizaciones): Promise<cotizaciones>{
+    /* async updateCotizacion(folio_cotizacion: number, data: cotizaciones): Promise<cotizaciones>{
         return this.prisma.cotizaciones.update({
             where: {folio_cotizacion},
             data
