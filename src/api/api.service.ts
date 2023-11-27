@@ -76,6 +76,46 @@ export class ApiService{
         return filteredCotizaciones;
     }
 
+    async getEstadoResultado(code_cotizacion:any):Promise<any>{
+        const cotizacion_detalle = await this.prisma.cotizacion_detalle.findMany({where:{
+            folio_cotizacion: Number(code_cotizacion)
+        }})
+
+        for (let i = 0; i < cotizacion_detalle.length; i++) {
+            const detalle = cotizacion_detalle[i];
+            const codigoParte = detalle.codigo_parte;
+            // Realizar la consulta para encontrar la parte con el código correspondiente
+            const parteEncontrada = await this.prisma.parte.findUnique({
+                where: {
+                    codigo_parte: codigoParte // Usar el código de parte del objeto actual
+                }
+            });
+
+            const detalleConParte = { ...detalle, parteEncontrada };
+            cotizacion_detalle[i] = detalleConParte;
+        }
+
+        await this.prisma.parte.findUnique({where: {codigo_parte: ''}})
+
+        const cotizacion = await this.prisma.cotizaciones.findUnique({where:{ folio_cotizacion: Number(code_cotizacion)}})
+
+        let data_cliente_prospecto = null;
+        if (cotizacion.clase_cliente == 'P') {
+            data_cliente_prospecto = await this.prisma.prospecto.findUnique({where: {codigo_prospecto: Number(cotizacion.codigo_cliente_prospecto)}})
+        }else{
+            data_cliente_prospecto = await this.prisma.cLIENTES.findUnique({where: {CLI_CLAVE : cotizacion.codigo_cliente_prospecto}})
+        }
+
+        const data_vendedor = await this.prisma.vendedor.findUnique({where:{codigo_vendedor: cotizacion.codigo_vendedor}});
+
+        return {data: {
+            cotizacion_data: cotizacion,
+            vendedor: data_vendedor,
+            cliente_prospecto: data_cliente_prospecto,
+            cotizacion_detalle_array: cotizacion_detalle
+        }, status: 200}
+    }
+
     async saveCotizacion(data:Request_saveCotizacion): Promise<any>{
         const transaction = await this.prisma.$transaction(async (prisma) => {
             //VALIDAR SI EL "CLIENTE" EXISTE, SI NO EXISTE PONERLO EN PROSPECTO Y POSTERIORIMENTE PONER LA VANDERA SI ES CLIENTE O PROPSECTO
@@ -297,19 +337,6 @@ export class ApiService{
         };
         return obj_respone;
     }
-
-    /* async updateCotizacion(folio_cotizacion: number, data: cotizaciones): Promise<cotizaciones>{
-        return this.prisma.cotizaciones.update({
-            where: {folio_cotizacion},
-            data
-        })
-    }
-
-    async deleteCotizacion(folio_cotizacion: number): Promise<cotizaciones>{
-        return this.prisma.cotizaciones.delete({
-            where:{folio_cotizacion}
-        })
-    } */
 
     /* TABLA CLIENTES / PROSPECTOS */
     async getClientes(): Promise<clientesProspectos>{

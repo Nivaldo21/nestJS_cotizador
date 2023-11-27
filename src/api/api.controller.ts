@@ -51,6 +51,11 @@ export class ApiController{
     async getCotizacionByCode(@Param() params:any) {
         return this.apiService.getCotizacionByCode(params.code);
     }
+
+    @Get('getCotizacionEstadoResultadosByCode/:code')
+    async getCotizacionEstadoResultadosByCode(@Param() params:any){
+        return this.apiService.getEstadoResultado(params.code);
+    }
     
 
     @Get('')
