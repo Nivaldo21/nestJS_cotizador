@@ -172,6 +172,8 @@ export class ApiService{
                 
                 const utilidad_neta_toFixed = utilidad_antes_ebitda_result - ( utilidad_antes_ebitda_result * 0.3) - (utilidad_antes_ebitda_result * 0.1);
                 const margen_neto_tofixed = (utilidad_antes_ebitda_result -  ( utilidad_antes_ebitda_result * 0.3) - (utilidad_antes_ebitda_result * 0.1)) / ingresos_result;
+
+                const margen_antes_ebitda_result = utilidad_antes_ebitda_result / ingresos_result;
                 let obj_estadoResultados:any = {
                     ingresos: ingresos_result.toFixed(4),
                     costo_materia_prima: costo_materia_prima_result,
@@ -182,6 +184,7 @@ export class ApiService{
                     gastos_fijos: (Number(element.overhead) + Number(element.margin_overhead))*Number(element.eau),
                     egresos: (Number(element.overhead) + Number(element.margin_overhead))*Number(element.eau),
                     utilidad_antes_ebitda: utilidad_antes_ebitda_result,
+                    margen_antes_ebitda: margen_antes_ebitda_result.toFixed(4),
                     isr: utilidad_antes_ebitda_result * 0.3,
                     ptu: utilidad_antes_ebitda_result * 0.1,
                     utilidad_neta: utilidad_neta_toFixed.toFixed(4),
@@ -190,7 +193,7 @@ export class ApiService{
 
                 const regex_11_4 = /^\d{1,7}(\.\d{1,4})?$/;
                 const regex_6_4 = /^\d{1,2}(\.\d{1,4})?$/;
-                if (!regex_11_4.test(obj_estadoResultados.ingresos) || !regex_6_4.test(obj_estadoResultados.margen_neto) || !regex_11_4.test(obj_estadoResultados.utilidad_neta)) {
+                if (!regex_11_4.test(obj_estadoResultados.ingresos) || !regex_6_4.test(obj_estadoResultados.margen_neto) || !regex_11_4.test(obj_estadoResultados.utilidad_neta) || !regex_6_4.test(obj_estadoResultados.margen_antes_ebitda)) {
                     throw new HttpException('Un valor que se calcula para el estado de resultados no cumple con el formato de decimal(11,4) o decimal(6,4)', HttpStatus.BAD_REQUEST);
                 }
                 
@@ -254,6 +257,7 @@ export class ApiService{
                         egresos: obj_estadoResultados.egresos,
                         gastos_fijos: obj_estadoResultados.gastos_fijos,
                         utilidad_antes_ebitda: obj_estadoResultados.utilidad_antes_ebitda,
+                        margen_antes_ebitda: obj_estadoResultados.margen_antes_ebitda,
                         isr: obj_estadoResultados.isr,
                         ptu: obj_estadoResultados.ptu,
                         utilidad_neta: parseFloat(obj_estadoResultados.utilidad_neta),

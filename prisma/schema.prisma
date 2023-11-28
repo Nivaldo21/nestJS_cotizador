@@ -68,6 +68,7 @@ model cotizacion_detalle {
   egresos                 Decimal? @db.Decimal(11, 4)
   gastos_fijos            Decimal? @db.Decimal(11, 4)
   utilidad_antes_ebitda   Decimal? @db.Decimal(11, 4)
+  margen_antes_ebitda     Decimal? @db.Decimal(6, 4)
   isr                     Decimal? @db.Decimal(11, 4)
   ptu                     Decimal? @db.Decimal(11, 4)
   utilidad_neta           Decimal? @db.Decimal(11, 4)
