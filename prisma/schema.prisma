@@ -82,7 +82,7 @@ model cotizacion_materiales {
   id_parte              Int
   id_material           Int      @default(autoincrement())
   codigo_material       String?  @db.VarChar(30)
-  supplier_resin        Decimal? @db.Decimal(11, 4)
+  supplier_resin        String?  @db.VarChar(100)
   part_g                Decimal? @db.Decimal(11, 4)
   runner_porc           Decimal? @db.Decimal(6, 4)
   runner_g              Decimal? @db.Decimal(11, 4)
@@ -134,8 +134,8 @@ model material {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model param_industria {
-  tipo_cliente       String   @unique(map: "tipo_cliente_UNIQUE") @db.VarChar(40)
-  tipo_precio        String   @unique(map: "tipo_precio_UNIQUE") @db.VarChar(20)
+  tipo_cliente       String   @db.VarChar(40)
+  tipo_precio        String   @db.VarChar(20)
   overhead_cost_porc Decimal? @db.Decimal(6, 4)
   loss_porc          Decimal? @db.Decimal(6, 4)
   gk_porc            Decimal? @db.Decimal(6, 4)
