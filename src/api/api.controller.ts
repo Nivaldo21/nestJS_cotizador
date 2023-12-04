@@ -1,12 +1,23 @@
 import { Body, Controller, Get, Param, Post, Res } from "@nestjs/common";
 import { ApiService } from "./api.service";
-import { Response } from 'express';
-import { Request_SearchCotizacion, Request_SearchMaquina, Request_SearchParamIndustria } from "src/interfaces";
+import { FormPdf, Request_SearchCotizacion, Request_SearchMaquina, Request_SearchParamIndustria } from "src/interfaces";
 
 @Controller()
 export class ApiController{
 
     constructor(private apiService:ApiService){}
+
+    @Post("pdf")
+    async downloadPDF(@Body() data:FormPdf, @Res() res): Promise<void> {
+        const buffer = await this.apiService.generarPDF(data);
+        console.log("pdf",buffer);
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename=example.pdf',
+            'Content-Length': buffer.length,
+          })
+        res.end(buffer);
+    }
 
     @Get('clientes')
     async getAllClientes(){

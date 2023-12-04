@@ -1,11 +1,236 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { Prisma, cotizacion_detalle, cotizacion_materiales, cotizaciones, maquina, material, param_industria, parte, prospecto, vendedor } from "@prisma/client";
-import { Detalle_cotizacion_response, Request_SearchCotizacion, Request_SearchMaquina, Request_SearchParamIndustria, Request_saveCotizacion, WhereConditions, clientesProspectos } from "src/interfaces";
+import { Detalle_cotizacion_response, FormPdf, Request_SearchCotizacion, Request_SearchMaquina, Request_SearchParamIndustria, Request_saveCotizacion, WhereConditions, clientesProspectos } from "src/interfaces";
 import { PrismaService } from "src/prisma/prisma.service";
+import {join, resolve } from 'path';
+const PDFDocument = require("pdfkit-table");
 
 @Injectable()
 export class ApiService{
     constructor(private prisma:PrismaService){}
+
+    async generarPDF(data:FormPdf) {
+        const cotizacion = await this.prisma.cotizaciones.findFirst({
+            where: { folio_cotizacion: 1 },
+            select: {
+                folio_cotizacion: true,
+                codigo_cliente_prospecto: true,
+                clase_cliente: true,
+                fecha_generacion: true,
+            }
+        });
+        let clienteNombre= null;
+        if (cotizacion.clase_cliente == 'C') {
+            clienteNombre = await this.prisma.cLIENTES.findUnique({
+                where: { CLI_CLAVE:  cotizacion.codigo_cliente_prospecto},
+                select: {  CLI_NOMBRE: true }
+            });
+        }else{
+            clienteNombre = await this.prisma.prospecto.findUnique({
+                where: { codigo_prospecto:  Number(cotizacion.codigo_cliente_prospecto)},
+                select: {  nombre_prospecto: true }
+            });
+        }
+        const cotizacion_detalles = await this.prisma.cotizacion_detalle.findMany({
+            where:{ folio_cotizacion: 1 },
+        })
+
+        let arrayCotizacionDetalle = [];
+        for (let index = 0; index < cotizacion_detalles.length; index++) {
+            const nombreParte = await this.prisma.parte.findUnique({where:{codigo_parte:cotizacion_detalles[index].codigo_parte}})
+            let objMaterial = {};
+            objMaterial = {nombre_parte: nombreParte.nombre_parte,...cotizacion_detalles[index]}
+            arrayCotizacionDetalle.push(objMaterial);
+        }
+
+        console.log("========");
+        console.log("========");
+        console.log(cotizacion);
+        console.log(clienteNombre);
+        console.log(arrayCotizacionDetalle);
+        console.log("========");
+        console.log("========");
+
+        const pdfBuffer:Buffer = await new Promise(async resolve =>{
+            
+            const doc = await new PDFDocument({
+                size: "LETTER",
+                bufferPages: true
+            });
+
+            let _headers = [];
+            let _datas = [];
+
+            if (data.tipo_documento == 'Normal'){
+                 _headers = [ 
+                    { label: "ITEM",  width:60, property: 'ITEM', align:'center', headerAlign:'center' , headerColor:"#322e61",headerOpacity:1, columnColor: 'white' },
+                    { label: "NO. PARTE",  width:80, property: 'no_parte'  ,align:'center', headerAlign:'center' , headerColor:"#322e61",headerOpacity:1, columnColor: 'white' },
+                    { label: "DESCRIPCIÓN", width:200,  property: 'desc', headerAlign:'center' , headerColor:"#322e61",headerOpacity:1, columnColor: 'white'  },
+                    { label: "MOQ",  width:70,  property: 'moq', align:'center', headerAlign:'center' , headerColor:"#322e61",headerOpacity:1, columnColor: 'white' },
+                    { label: "PRECIO UNITARIO USD",  width:110,  align:'center' ,  property: 'unit_price', headerAlign:'center' , headerColor:"#322e61", headerOpacity:1, columnColor: 'white' },
+                ];
+                arrayCotizacionDetalle.forEach((element,index) =>{
+                    _datas.push({
+                        ITEM:  `${index+1}`, 
+                        no_parte: element.codigo_parte,
+                        desc: element.nombre_parte, 
+                        moq: `$ ${element.moq}`, 
+                        unit_price: `bold:$ ${element.unit_price}`
+                    })
+                })
+            }
+            if (data.tipo_documento == 'Ampliado'){
+                _headers = [ 
+                    { label: "ITEM", width:40, property: 'ITEM', align:'center', headerAlign:'center' , headerColor:"#322e61",headerOpacity:1, columnColor: 'white'},
+                    { label: "NO. PARTE", width:52, property: 'no_parte'  ,align:'center', headerAlign:'center' , headerColor:"#322e61",headerOpacity:1, columnColor: 'white' },
+                    { label: "DESCRIPCIÓN", width:150, align: 'center',property: 'desc', headerAlign:'center' , headerColor:"#322e61",headerOpacity:1, columnColor: 'white'  },
+                    { label: "MOQ", width:50, property: 'moq', align:'center', headerAlign:'center' , headerColor:"#322e61",headerOpacity:1, columnColor: 'white' },
+                    { label: "COSTO MATERIAL", width:57, property: 'costo_material', align:'center', headerAlign:'center' , headerColor:"#322e61",headerOpacity:1, columnColor: 'white' },
+                    { label: "COSTO MÁQUINA", width:57, property: 'costo_maquina', align:'center', headerAlign:'center' , headerColor:"#322e61",headerOpacity:1, columnColor: 'white' },
+                    { label: "COSTO LOGÍSTICO", width:62, property: 'costo_logistico', align:'center', headerAlign:'center' , headerColor:"#322e61",headerOpacity:1, columnColor: 'white' },
+                    { label: "PRECIO UNITARIO USD", width:80, align:'center' ,  property: 'unit_price', headerAlign:'center' , headerColor:"#322e61", headerOpacity:1, columnColor: 'white'},
+                ];
+                arrayCotizacionDetalle.forEach((element,index) =>{
+                    _datas.push({
+                        ITEM:  `${index+1}`, 
+                        no_parte: element.codigo_parte,
+                        desc: element.nombre_parte, 
+                        moq: `$ ${element.moq}`, 
+                        costo_material: `$ ${element.total_materias_primas}`,
+                        costo_maquina: `$ ${Number(element.total_produccion)+Number(element.total_mantenimiento)}`,
+                        costo_logistico: `$ ${element.total_empaque_logistica}`,
+                        unit_price: `bold:$ ${element.unit_price}`
+                    })
+                })
+            }
+
+            console.log(data);
+
+            const _table = {
+                headers: _headers,
+                datas: _datas
+            }
+
+            doc.image(join(process.cwd(), "img/camca_logo.jpeg"),50, 30, { width: 190, height: 60 });
+            doc.font("Helvetica").fontSize(10);
+
+            const x = 310;
+            const y = 50;
+            const padding = 20; // Padding alrededor del texto
+
+            // Calcular el ancho y la altura del texto
+            const textWidth = doc.widthOfString('Número de cotización');
+            const textHeight = doc.currentLineHeight();
+
+            // Dibujar el recctángulo con padding y color de fondo
+            doc.fillColor("#322e61")
+            .rect(x - padding, y - padding, textWidth + 7.5 * padding, textHeight + 1.8 * padding)
+            .fill();
+            // Escribir el texto encima del rectángulo
+            doc.fillColor('#FFFFFF')
+            .text(`Número de cotización`, x, y).text();
+
+            doc.y = 50;
+            doc.x = 500;
+            doc.text(cotizacion.folio_cotizacion).fillColor('#FFFFFF');
+
+
+            doc.y = 100;
+            doc.x = 300;
+            doc.font("Helvetica").fontSize(9).fillColor("#000000");
+            doc.text('El Marqués Querétaro a');
+            doc.x = 480;
+            doc.y = 100;
+            const today = new Date();
+            doc.text(`${today.getDay()}/${today.getMonth()}/${today.getFullYear()}`);
+
+
+            doc.x = 50;
+            doc.y = 140;
+            doc.font("Helvetica-Bold").fontSize(12).fillColor("#000000");
+            doc.text("Rogelio García Rodríguez");
+            doc.font("Helvetica").fontSize(9);
+            doc.text("Director Comercial");
+
+            // Dibujar una línea vertical
+            const lineStartX =225; // Cambia estos valores según sea necesario
+            const lineStartY = 140; // La posición vertical de inicio de la línea
+            const lineLength = (16 *1.2) * 2; // Longitud de la línea
+
+            doc.strokeColor("#989898");
+            doc.moveTo(lineStartX, lineStartY)
+            .lineTo(lineStartX, lineStartY + lineLength)
+            .stroke(); 
+
+            doc.x = 280;
+            doc.y = 140;
+            doc.font("Helvetica-Bold").fontSize(12).fillColor("#000000");
+            doc.text(clienteNombre.CLI_NOMBRE);
+
+            doc.x = 50;
+            doc.y = 180;
+            doc.moveDown();
+            doc.font("Helvetica").fontSize(9);
+            doc.text("Atendiendo su amable solicitud, le presentamos la siguiente cotización");
+            doc.moveDown();
+            
+            data.tipo_documento == 'Ampliado' ? doc.x = 30 : doc.x = 40;
+            doc.table(_table,{
+                prepareHeader: () => doc.font("Helvetica").fontSize(9).fillColor('#ffffff'),
+                prepareRow: () => doc.font("Helvetica").fontSize(10).fillColor('#000000'),
+                minRowHeight:20,
+                padding: 1,
+                width: doc.page.width-90
+            })
+            doc.moveDown();
+            doc.x = 50;
+            doc.font("Helvetica").fontSize(8);
+            doc.text("Sin más por el momento en espera de su aprobación y Orden de Compra, quedo a sus apreciables órdenes informándole las:");
+            doc.moveDown();
+            doc.font("Helvetica-Bold").fontSize(10);
+            doc.text("CONDICIONES GENERALES:");
+            doc.moveDown();
+            doc.font("Helvetica").fontSize(10);
+            
+            const _lista = [
+                "A los precios anteriores se les adicionará el IVA",
+            ];
+
+            if (data.condiciones_empaqueEstandar) _lista.push("Incluye Empaque estándar sugerido por Industria CAMCA");
+            if (data.condiciones_materiaPrima) _lista.push("Materia prima: Proporcionada por cliente");
+            if (data.condiciones_OCmoq) _lista.push("Las OC de compra del cliente deben cumplir el MOQ");
+            if (data.condiciones_EntregaCliente) _lista.push("Entrega en su planta de cliente");
+            _lista.push(`Tiempo de entrega: ${data.tiempo_entrga}`,
+            `Condiciones de pago: ${data.condiciones_pago}`,
+            `Vigencia de la cotización: ${data.vigencia}`)
+            
+            doc.font("Helvetica").fontSize(8);
+            doc.list(_lista, {
+                bulletRadius: 2,
+                bulletIndent: 10,
+                lineGap: 5,
+                textIndent: 15
+            });
+            doc.moveDown();
+            doc.font("Helvetica").fontSize(9);
+            doc.moveDown();
+            doc.text("Atentamente");
+            doc.font("Helvetica-Bold").fontSize(10);
+            doc.moveDown();
+            doc.text("ING. ARTURO CAMPOS LOPEZ"); 
+
+            const buffer = []
+            doc.on('data', buffer.push.bind(buffer))
+            doc.on('end', () => {
+                const data = Buffer.concat(buffer)
+                resolve(data)
+            })
+            doc.end()
+        })   
+
+        return pdfBuffer;
+     
+    }
 
     async getCotizaciones(data:Request_SearchCotizacion): Promise<cotizaciones[]>{
         let filters: {
