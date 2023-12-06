@@ -11,7 +11,7 @@ export class ApiService{
 
     async generarPDF(data:FormPdf) {
         const cotizacion = await this.prisma.cotizaciones.findFirst({
-            where: { folio_cotizacion: 1 },
+            where: { folio_cotizacion: Number(data.num_cotizacion) },
             select: {
                 folio_cotizacion: true,
                 codigo_cliente_prospecto: true,
@@ -32,7 +32,7 @@ export class ApiService{
             });
         }
         const cotizacion_detalles = await this.prisma.cotizacion_detalle.findMany({
-            where:{ folio_cotizacion: 1 },
+            where:{ folio_cotizacion: Number(data.num_cotizacion) },
         })
 
         let arrayCotizacionDetalle = [];
@@ -458,8 +458,8 @@ export class ApiService{
                         unit_price: Number(element.unit_price),
                         margin_total: Number(element.margin_total),
 
-                        total_materias_primas: Number(element.total_materia_prima),
-                        materias_primas_porc: element.total_materia_prima/Number(element.unit_price),
+                        total_materias_primas: Number(element.tabla_total_materias_primas),
+                        materias_primas_porc: element.tabla_total_materias_primas/Number(element.unit_price),
                         total_produccion: element.tabla_total_produccion,
                         produccion_porc:  element.tabla_produccion_porc,
                         total_empaque_logistica:  element.tabla_total_empaque_logistica,
