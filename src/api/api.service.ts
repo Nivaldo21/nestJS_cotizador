@@ -459,7 +459,7 @@ export class ApiService{
                         margin_total: Number(element.margin_total),
 
                         total_materias_primas: Number(element.tabla_total_materias_primas),
-                        materias_primas_porc: element.tabla_total_materias_primas/Number(element.unit_price),
+                        materias_primas_porc: element.tabla_total_materias_primas_percent,
                         total_produccion: element.tabla_total_produccion,
                         produccion_porc:  element.tabla_produccion_porc,
                         total_empaque_logistica:  element.tabla_total_empaque_logistica,
