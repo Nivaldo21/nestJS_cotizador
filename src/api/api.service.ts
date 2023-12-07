@@ -400,12 +400,7 @@ export class ApiService{
                 const margen_neto_tofixed = (utilidad_antes_ebitda_result -  ( utilidad_antes_ebitda_result * 0.3) - (utilidad_antes_ebitda_result * 0.1)) / ingresos_result;
                 const margen_neto_tofixed_percent = margen_neto_tofixed * 100;
 
-                console.log("utilidad_antes_ebitda_result",utilidad_antes_ebitda_result);
-                console.log('ingresos_result',ingresos_result)
                 const margen_antes_ebitda_result = (utilidad_antes_ebitda_result / ingresos_result) * 100;
-                console.log("margen_antes_ebitda_result",margen_antes_ebitda_result);
-                throw new HttpException('checa consla', HttpStatus.BAD_REQUEST);
-
                 let obj_estadoResultados:any = {
                     ingresos: ingresos_result.toFixed(4),
                     costo_materia_prima: costo_materia_prima_result,
