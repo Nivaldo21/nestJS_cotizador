@@ -3,6 +3,7 @@ import { Prisma, cotizacion_detalle, cotizacion_materiales, cotizaciones, maquin
 import { Detalle_cotizacion_response, FormPdf, Request_SearchCotizacion, Request_SearchMaquina, Request_SearchParamIndustria, Request_saveCotizacion, WhereConditions, clientesProspectos } from "src/interfaces";
 import { PrismaService } from "src/prisma/prisma.service";
 import {join, resolve } from 'path';
+import { throwError } from "rxjs";
 const PDFDocument = require("pdfkit-table");
 
 @Injectable()
@@ -397,8 +398,14 @@ export class ApiService{
                 
                 const utilidad_neta_toFixed = utilidad_antes_ebitda_result - ( utilidad_antes_ebitda_result * 0.3) - (utilidad_antes_ebitda_result * 0.1);
                 const margen_neto_tofixed = (utilidad_antes_ebitda_result -  ( utilidad_antes_ebitda_result * 0.3) - (utilidad_antes_ebitda_result * 0.1)) / ingresos_result;
+                const margen_neto_tofixed_percent = margen_neto_tofixed * 100;
 
-                const margen_antes_ebitda_result = utilidad_antes_ebitda_result / ingresos_result;
+                console.log("utilidad_antes_ebitda_result",utilidad_antes_ebitda_result);
+                console.log('ingresos_result',ingresos_result)
+                const margen_antes_ebitda_result = (utilidad_antes_ebitda_result / ingresos_result) * 100;
+                console.log("margen_antes_ebitda_result",margen_antes_ebitda_result);
+                throw new HttpException('checa consla', HttpStatus.BAD_REQUEST);
+
                 let obj_estadoResultados:any = {
                     ingresos: ingresos_result.toFixed(4),
                     costo_materia_prima: costo_materia_prima_result,
@@ -413,7 +420,7 @@ export class ApiService{
                     isr: utilidad_antes_ebitda_result * 0.3,
                     ptu: utilidad_antes_ebitda_result * 0.1,
                     utilidad_neta: utilidad_neta_toFixed.toFixed(4),
-                    margen_neto: margen_neto_tofixed.toFixed(4)
+                    margen_neto:margen_neto_tofixed_percent.toFixed(4)
                 }
 
                 const regex_11_4 = /^\d{1,7}(\.\d{1,4})?$/;
