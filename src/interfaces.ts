@@ -143,4 +143,6 @@ export interface FormPdf {
     condiciones_pago: string;
     vigencia: string;
     num_cotizacion?: string;
+    director_nombre?: string;
+    puesto_director?: string;
 }

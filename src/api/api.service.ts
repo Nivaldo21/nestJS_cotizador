@@ -145,13 +145,13 @@ export class ApiService{
             const today = new Date();
             doc.text(`${today.getDay()}/${today.getMonth()}/${today.getFullYear()}`);
 
-
-            doc.x = 50;
+            //SECCION DDONDE ESTARA EL NOMBRE PROPORCIONADA DE LA DARA
+            /* doc.x = 50;
             doc.y = 140;
             doc.font("Helvetica-Bold").fontSize(12).fillColor("#000000");
             doc.text("Rogelio García Rodríguez");
             doc.font("Helvetica").fontSize(9);
-            doc.text("Director Comercial");
+            doc.text("Director Comercial"); */
 
             // Dibujar una línea vertical
             const lineStartX =225; // Cambia estos valores según sea necesario
