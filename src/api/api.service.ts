@@ -142,8 +142,11 @@ export class ApiService{
             doc.text('El Marqués Querétaro a');
             doc.x = 480;
             doc.y = 100;
-            const today = new Date();
-            doc.text(`${today.getDay()}/${today.getMonth()}/${today.getFullYear()}`);
+            const fecha = new Date();
+            const dia = fecha.getDate().toString().padStart(2, '0'); // Obtener día y asegurar que tenga dos dígitos
+            const mes = (fecha.getMonth() + 1).toString().padStart(2, '0'); // Obtener mes (se suma 1 ya que los meses van de 0 a 11) y asegurar que tenga dos dígitos
+            const anio = fecha.getFullYear();
+            doc.text(`${dia}/${mes}/${anio}`);
 
             //SECCION DDONDE ESTARA EL NOMBRE PROPORCIONADA DE LA DARA
             /* doc.x = 50;
